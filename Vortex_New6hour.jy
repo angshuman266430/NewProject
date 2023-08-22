@@ -1,0 +1,51 @@
+from mil.army.usace.hec.vortex.io import BatchImporter
+from mil.army.usace.hec.vortex.geo import WktFactory
+import glob
+import os
+
+variables = ['PRCP']
+
+clip_shp = r"Z:\GLO\TC_related\NewShift\Precip_Extents.shp"
+
+geo_options = {
+    'pathToShp': clip_shp,
+    'targetCellSize': '2000',
+    'targetWkt': WktFactory.shg(),
+    'resamplingMethod': 'Bilinear'
+}
+
+events = ['MostLikely_Shifted_minus6', 'MostLikely_Shifted_plus6']
+
+for event in events:
+    in_dir = "Z:\\GLO\\TC_related\\NewShift\\" + event
+    f = glob.glob(in_dir + "//*.nc")
+
+    for afile in f:
+        head, tail = os.path.split(afile)
+        in_files = [afile]
+        
+        # Extracting partA, partB, and partF from the filename
+        partA = "PRCP"
+        
+        partB_list = tail.split(".")[0].split("_")[5:-1]
+        partB = ' '.join(partB_list)
+        
+        partF = tail.split("_")[3].upper()  # Extracting the year (e.g., 100YR)
+        
+        destination = afile.rsplit(".", 1)[0] + ".dss"
+        
+        write_options = {
+            'partA': partA,
+            'partB': partB,
+            'partF': partF
+        }
+
+        myImport = BatchImporter.builder() \
+            .inFiles(in_files) \
+            .variables(variables) \
+            .geoOptions(geo_options) \
+            .destination(destination) \
+            .writeOptions(write_options) \
+            .build()
+
+        myImport.process()
