@@ -1,0 +1,43 @@
+from mil.army.usace.hec.vortex.io import BatchImporter
+from mil.army.usace.hec.vortex.geo import WktFactory
+import glob
+
+variables = ['PRCP']
+
+clip_shp = r"Z:\GLO\TC_related\Precip_Extents.shp"
+
+geo_options = {
+    'pathToShp': clip_shp,
+    'targetCellSize': '2000',
+    'targetWkt': WktFactory.shg(),
+    'resamplingMethod': 'Bilinear'
+}
+
+events = ['Left_shifted', 'MostLikely_shifted', 'Right_shifted']
+
+for event in events:
+
+    in_dir = "Z:\\GLO\\TC_related\\"+ event
+    f = glob.glob(in_dir+"//*.nc") 
+
+    for afile in f:
+        
+        in_files = [afile]
+        stormId = afile.split("_")[4]
+        ensembleId = afile.split("_")[5].split(".")[0]
+        destination = afile.rsplit(".", 1)[0]+".dss"  # updated to just replace extension
+        
+        write_options = {
+        'partA': stormId,
+        'partF': ensembleId
+        }
+
+        myImport = BatchImporter.builder() \
+            .inFiles(in_files) \
+            .variables(variables) \
+            .geoOptions(geo_options) \
+            .destination(destination) \
+            .writeOptions(write_options) \
+            .build()
+
+        myImport.process()
